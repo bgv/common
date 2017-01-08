@@ -14,8 +14,8 @@ var (
 )
 
 const (
-	reqsName    = "http_requests_total"
-	latencyName = "http_request_duration_milliseconds"
+	reqsName    = "requests_total"
+	latencyName = "request_duration_milliseconds"
 )
 
 // PrometheusHandler bootstraps Prometheus for metrics collection
@@ -27,6 +27,8 @@ func PrometheusHandler() http.Handler {
 func PrometheusStats(name string, buckets ...float64) func(http.Handler) http.Handler {
 	requests := prometheus.NewCounterVec(
 		prometheus.CounterOpts{
+			Namespace:   name,
+			Subsystem:   "http",
 			Name:        reqsName,
 			Help:        "How many HTTP requests processed, partitioned by status code, method and HTTP path.",
 			ConstLabels: prometheus.Labels{"service": name},
@@ -40,6 +42,8 @@ func PrometheusStats(name string, buckets ...float64) func(http.Handler) http.Ha
 	}
 
 	latency := prometheus.NewHistogramVec(prometheus.HistogramOpts{
+		Namespace:   name,
+		Subsystem:   "http",
 		Name:        latencyName,
 		Help:        "How long it took to process the request, partitioned by status code, method and HTTP path.",
 		ConstLabels: prometheus.Labels{"service": name},
