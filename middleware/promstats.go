@@ -2,7 +2,6 @@ package middleware
 
 import (
 	"net/http"
-	"os"
 	"time"
 
 	mw "github.com/pressly/chi/middleware"
