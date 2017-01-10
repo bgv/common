@@ -27,14 +27,8 @@ func PrometheusHandler() http.Handler {
 // PrometheusStats returns a new Prometheus middleware handler.
 func PrometheusStats(name string, buckets ...float64) func(http.Handler) http.Handler {
 
-	prometheus.Unregister(prometheus.NewProcessCollector(os.Getpid(), ""))
-	prometheus.Unregister(prometheus.NewGoCollector())
-	prometheus.MustRegister(prometheus.NewProcessCollector(os.Getpid(), name))
-	prometheus.MustRegister(prometheus.NewGoCollector())
-
 	requests := prometheus.NewCounterVec(
 		prometheus.CounterOpts{
-			Namespace:   name,
 			Subsystem:   "http",
 			Name:        reqsName,
 			Help:        "How many HTTP requests processed, partitioned by status code, method and HTTP path.",
@@ -49,7 +43,6 @@ func PrometheusStats(name string, buckets ...float64) func(http.Handler) http.Ha
 	}
 
 	latency := prometheus.NewHistogramVec(prometheus.HistogramOpts{
-		Namespace:   name,
 		Subsystem:   "http",
 		Name:        latencyName,
 		Help:        "How long it took to process the request, partitioned by status code, method and HTTP path.",
@@ -76,14 +69,8 @@ func PrometheusStats(name string, buckets ...float64) func(http.Handler) http.Ha
 // PrometheusStats returns a new Prometheus middleware handler.
 func PrometheusDetailedStats(name string, buckets ...float64) func(http.Handler) http.Handler {
 
-	prometheus.Unregister(prometheus.NewProcessCollector(os.Getpid(), ""))
-	prometheus.Unregister(prometheus.NewGoCollector())
-	prometheus.MustRegister(prometheus.NewProcessCollector(os.Getpid(), name))
-	prometheus.MustRegister(prometheus.NewGoCollector())
-
 	requests := prometheus.NewCounterVec(
 		prometheus.CounterOpts{
-			Namespace:   name,
 			Subsystem:   "http",
 			Name:        reqsName,
 			Help:        "How many HTTP requests processed, partitioned by status code, method and HTTP path.",
@@ -98,7 +85,6 @@ func PrometheusDetailedStats(name string, buckets ...float64) func(http.Handler)
 	}
 
 	latency := prometheus.NewHistogramVec(prometheus.HistogramOpts{
-		Namespace:   name,
 		Subsystem:   "http",
 		Name:        latencyName,
 		Help:        "How long it took to process the request, partitioned by status code, method and HTTP path.",
