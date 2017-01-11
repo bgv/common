@@ -18,9 +18,9 @@ const (
 	latencyName = "request_duration_milliseconds"
 )
 
-// PrometheusHandler bootstraps Prometheus for metrics collection
-func PrometheusHandler() http.Handler {
-	return promhttp.Handler()
+// PrometheusHandlerFunc bootstraps Prometheus for metrics collection
+func PrometheusHandlerFunc() http.HandlerFunc {
+	return promhttp.Handler().ServeHTTP
 }
 
 // PrometheusStats returns a new Prometheus middleware handler.
