@@ -18,91 +18,64 @@ const (
 	latencyName = "request_duration_milliseconds"
 )
 
-// PrometheusHandlerFunc bootstraps Prometheus for metrics collection
-func PrometheusHandlerFunc() http.HandlerFunc {
+// PromMiddleware is a handler that exposes prometheus metrics for the number of requests,
+// the latency and the response size, partitioned by status code, method and HTTP path.
+type PromMiddleware struct {
+	reqs    *prometheus.CounterVec
+	latency *prometheus.HistogramVec
+	service string
+}
+
+func Prometheus(service string, buckets ...float64) *PromMiddleware {
+	prom := &PromMiddleware{
+		service: service,
+	}
+
+	prom.registerMetrics(buckets...)
+
+	return prom
+}
+
+// HandlerFunc returns Prometheus http.HandlerFunc for metrics collection
+func (pmw *PromMiddleware) HandlerFunc() http.HandlerFunc {
 	return promhttp.Handler().ServeHTTP
 }
 
-// PrometheusStats returns a new Prometheus middleware handler.
-func PrometheusStats(name string, buckets ...float64) func(http.Handler) http.Handler {
-
-	requests := prometheus.NewCounterVec(
-		prometheus.CounterOpts{
-			Subsystem:   "http",
-			Name:        reqsName,
-			Help:        "How many HTTP requests processed, partitioned by status code, method and HTTP path.",
-			ConstLabels: prometheus.Labels{"service": name},
-		},
-		[]string{"code", "method"},
-	)
-	prometheus.MustRegister(requests)
-
-	if len(buckets) == 0 {
-		buckets = defaultBuckets
-	}
-
-	latency := prometheus.NewHistogramVec(prometheus.HistogramOpts{
-		Subsystem:   "http",
-		Name:        latencyName,
-		Help:        "How long it took to process the request, partitioned by status code, method and HTTP path.",
-		ConstLabels: prometheus.Labels{"service": name},
-		Buckets:     buckets,
-	},
-		[]string{"code", "method"},
-	)
-	prometheus.MustRegister(latency)
-
-	f := func(h http.Handler) http.Handler {
-		fn := func(w http.ResponseWriter, r *http.Request) {
-			start := time.Now()
-			ww := mw.NewWrapResponseWriter(w, r.ProtoMajor)
-			h.ServeHTTP(ww, r)
-			requests.WithLabelValues(http.StatusText(ww.Status()), r.Method).Inc()
-			latency.WithLabelValues(http.StatusText(ww.Status()), r.Method).Observe(float64(time.Since(start).Nanoseconds()) / 1e6) // milliseconds
-		}
-		return http.HandlerFunc(fn)
-	}
-	return f
+// Middleware returns a new Prometheus middleware handler.
+func (pmw *PromMiddleware) Middleware(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+		ww := mw.NewWrapResponseWriter(w, r.ProtoMajor)
+		h.ServeHTTP(ww, r)
+		pmw.reqs.WithLabelValues(http.StatusText(ww.Status()), r.Method).Inc()
+		pmw.latency.WithLabelValues(http.StatusText(ww.Status()), r.Method).Observe(float64(time.Since(start).Nanoseconds()) / 1e6) // milliseconds
+	})
 }
 
-// PrometheusStats returns a new Prometheus middleware handler.
-func PrometheusDetailedStats(name string, buckets ...float64) func(http.Handler) http.Handler {
-
-	requests := prometheus.NewCounterVec(
+func (pmw *PromMiddleware) registerMetrics(buckets ...float64) {
+	pmw.reqs = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Subsystem:   "http",
 			Name:        reqsName,
 			Help:        "How many HTTP requests processed, partitioned by status code, method and HTTP path.",
-			ConstLabels: prometheus.Labels{"service": name},
+			ConstLabels: prometheus.Labels{"service": pmw.service},
 		},
-		[]string{"code", "method", "path"},
+		[]string{"code", "method"},
 	)
-	prometheus.MustRegister(requests)
 
 	if len(buckets) == 0 {
 		buckets = defaultBuckets
 	}
 
-	latency := prometheus.NewHistogramVec(prometheus.HistogramOpts{
+	pmw.latency = prometheus.NewHistogramVec(prometheus.HistogramOpts{
 		Subsystem:   "http",
 		Name:        latencyName,
 		Help:        "How long it took to process the request, partitioned by status code, method and HTTP path.",
-		ConstLabels: prometheus.Labels{"service": name},
+		ConstLabels: prometheus.Labels{"service": pmw.service},
 		Buckets:     buckets,
 	},
-		[]string{"code", "method", "path"},
+		[]string{"code", "method"},
 	)
-	prometheus.MustRegister(latency)
 
-	f := func(h http.Handler) http.Handler {
-		fn := func(w http.ResponseWriter, r *http.Request) {
-			start := time.Now()
-			ww := mw.NewWrapResponseWriter(w, r.ProtoMajor)
-			h.ServeHTTP(ww, r)
-			requests.WithLabelValues(http.StatusText(ww.Status()), r.Method, r.URL.Path).Inc()
-			latency.WithLabelValues(http.StatusText(ww.Status()), r.Method, r.URL.Path).Observe(float64(time.Since(start).Nanoseconds()) / 1e6) // milliseconds
-		}
-		return http.HandlerFunc(fn)
-	}
-	return f
+	prometheus.MustRegister(pmw.reqs, pmw.latency)
 }
