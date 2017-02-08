@@ -13,10 +13,10 @@ import (
 func TestPrometheusMiddleware(t *testing.T) {
 	recorder := httptest.NewRecorder()
 
-    // Configure Prometheus middleware with service name test and latency buckets
+	// Configure Prometheus middleware with service name test and latency buckets
 	metrics := Prometheus("test", 300, 500, 1000, 2000)
 
-    r := chi.NewRouter()
+	r := chi.NewRouter()
 
 	r.Use(metrics.Middleware)
 
@@ -26,7 +26,7 @@ func TestPrometheusMiddleware(t *testing.T) {
 		fmt.Fprintln(w, "ok")
 	})
 
-    // Make a test request to record some metrics before we test the /metrics enpoint
+	// Make a test request to record some metrics before we test the /metrics enpoint
 	req1, err := http.NewRequest("GET", "/ok", nil)
 	if err != nil {
 		t.Error(err)
@@ -36,7 +36,7 @@ func TestPrometheusMiddleware(t *testing.T) {
 		t.Error(err)
 	}
 
-    // Record and test the request results
+	// Record and test the request results
 	r.ServeHTTP(recorder, req1)
 	r.ServeHTTP(recorder, req2)
 	body := recorder.Body.String()
