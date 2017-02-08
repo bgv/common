@@ -1,0 +1,19 @@
+sudo: false
+
+language: go
+
+go:
+  - 1.6.4
+  - 1.7.5
+  - tip
+
+matrix:
+  allow_failures:
+    - go: tip
+  fast_finish: true
+
+script:
+  - test -z "$(gofmt -s -l $(find . -name '*.go' -type f -print) | tee /dev/stderr)"
+  - go vet ./...
+  - go test -v ./...
+  - go test -race -v ./...
