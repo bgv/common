@@ -31,6 +31,10 @@ func Prometheus(service string, buckets ...float64) *PromMiddleware {
 		service: service,
 	}
 
+	if len(buckets) == 0 {
+		buckets = defaultBuckets
+	}
+
 	prom.registerMetrics(buckets...)
 
 	return prom
@@ -62,10 +66,6 @@ func (pmw *PromMiddleware) registerMetrics(buckets ...float64) {
 		},
 		[]string{"code", "method"},
 	)
-
-	if len(buckets) == 0 {
-		buckets = defaultBuckets
-	}
 
 	pmw.latency = prometheus.NewHistogramVec(prometheus.HistogramOpts{
 		Subsystem:   "http",
