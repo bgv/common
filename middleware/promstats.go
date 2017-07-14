@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"time"
 
-	mw "github.com/pressly/chi/middleware"
+	mw "github.com/go-chi/chi/middleware"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
