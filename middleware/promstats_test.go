@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/pressly/chi"
+	"github.com/go-chi/chi"
 )
 
 func TestPrometheusMiddleware(t *testing.T) {
